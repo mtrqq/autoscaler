@@ -58,10 +58,6 @@ func TestProviderConstructorProperties(t *testing.T) {
 		t.Errorf("expected 0, got %v", len(machineTypes))
 	}
 
-	if _, err := provider.NewNodeGroup("foo", nil, nil, nil, nil); err == nil {
-		t.Error("expected an error")
-	}
-
 	if err := provider.Cleanup(); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}

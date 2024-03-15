@@ -22,8 +22,6 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
-	resource "k8s.io/apimachinery/pkg/api/resource"
-
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -151,29 +149,6 @@ func (_m *CloudProvider) Name() string {
 	}
 
 	return r0
-}
-
-// NewNodeGroup provides a mock function with given fields: machineType, labels, systemLabels, taints, extraResources
-func (_m *CloudProvider) NewNodeGroup(machineType string, labels map[string]string, systemLabels map[string]string, taints []v1.Taint, extraResources map[string]resource.Quantity) (cloudprovider.NodeGroup, error) {
-	ret := _m.Called(machineType, labels, systemLabels, taints, extraResources)
-
-	var r0 cloudprovider.NodeGroup
-	if rf, ok := ret.Get(0).(func(string, map[string]string, map[string]string, []v1.Taint, map[string]resource.Quantity) cloudprovider.NodeGroup); ok {
-		r0 = rf(machineType, labels, systemLabels, taints, extraResources)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(cloudprovider.NodeGroup)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(string, map[string]string, map[string]string, []v1.Taint, map[string]resource.Quantity) error); ok {
-		r1 = rf(machineType, labels, systemLabels, taints, extraResources)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
 }
 
 // NodeGroupForNode provides a mock function with given fields: _a0

@@ -325,8 +325,9 @@ func (p *MockAutoprovisioningNodeGroupListProcessor) Process(context *context.Au
 
 	bestLabels := labels.BestLabelSet(unschedulablePods)
 	for _, machineType := range machines {
-		nodeGroup, err := context.CloudProvider.NewNodeGroup(machineType, bestLabels, map[string]string{}, []apiv1.Taint{}, map[string]resource.Quantity{})
-		assert.NoError(p.T, err)
+		nodeGroup := testcloudprovider.NewTestNodeGroup("autoprovisioned-"+machineType, 1000, 0, 0, false, true, machineType, bestLabels, []apiv1.Taint{})
+		// assuming that test is working with TestCloudProvider
+		nodeGroup.SetCloudProvider(context.CloudProvider.(*testcloudprovider.TestCloudProvider))
 		nodeInfo, err := nodeGroup.TemplateNodeInfo()
 		assert.NoError(p.T, err)
 		nodeInfos[nodeGroup.Id()] = nodeInfo

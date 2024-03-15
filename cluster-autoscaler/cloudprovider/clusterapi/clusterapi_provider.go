@@ -20,7 +20,6 @@ import (
 	"reflect"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/discovery/cached/memory"
 	"k8s.io/client-go/dynamic"
@@ -93,16 +92,6 @@ func (*provider) Pricing() (cloudprovider.PricingModel, errors.AutoscalerError) 
 
 func (*provider) GetAvailableMachineTypes() ([]string, error) {
 	return []string{}, nil
-}
-
-func (*provider) NewNodeGroup(
-	machineType string,
-	labels map[string]string,
-	systemLabels map[string]string,
-	taints []corev1.Taint,
-	extraResources map[string]resource.Quantity,
-) (cloudprovider.NodeGroup, error) {
-	return nil, cloudprovider.ErrNotImplemented
 }
 
 func (*provider) Cleanup() error {
