@@ -1,8 +1,15 @@
 approvers:
-- sig-autoscaling-leads
+- aleksandra-malinowska
+- BigDarkClown
+- feiskyer
+- towca
+- x13n
 reviewers:
-- sig-autoscaling-leads
-emeritus_approvers:
-- bskiba # 2022-09-30
-- mwielgus
-- maciekpytel
+- aleksandra-malinowska
+- BigDarkClown
+- feiskyer
+- vadasambar
+- x13n
+- elmiko
+labels:
+- area/cluster-autoscaler
