@@ -22,20 +22,20 @@ import (
 	"sync"
 	"time"
 
-	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider"
-	ca_context "k8s.io/autoscaler/cluster-autoscaler/context"
-	"k8s.io/autoscaler/cluster-autoscaler/core/scaledown/deletiontracker"
-	"k8s.io/autoscaler/cluster-autoscaler/core/scaledown/status"
-	"k8s.io/autoscaler/cluster-autoscaler/metrics"
-	"k8s.io/autoscaler/cluster-autoscaler/observers/nodegroupchange"
-	"k8s.io/autoscaler/cluster-autoscaler/utils/gpu"
-	"k8s.io/autoscaler/cluster-autoscaler/utils/kubernetes"
-	"k8s.io/autoscaler/cluster-autoscaler/utils/taints"
+	"k8s.io/cluster-autoscaler/pkg/cloudprovider"
+	ca_context "k8s.io/cluster-autoscaler/pkg/context"
+	"k8s.io/cluster-autoscaler/pkg/core/scaledown/deletiontracker"
+	"k8s.io/cluster-autoscaler/pkg/core/scaledown/status"
+	"k8s.io/cluster-autoscaler/pkg/metrics"
+	"k8s.io/cluster-autoscaler/pkg/observers/nodegroupchange"
+	"k8s.io/cluster-autoscaler/pkg/utils/gpu"
+	"k8s.io/cluster-autoscaler/pkg/utils/kubernetes"
+	"k8s.io/cluster-autoscaler/pkg/utils/taints"
 	"k8s.io/klog/v2"
 
 	apiv1 "k8s.io/api/core/v1"
 
-	"k8s.io/autoscaler/cluster-autoscaler/utils/errors"
+	"k8s.io/cluster-autoscaler/pkg/utils/errors"
 )
 
 const (

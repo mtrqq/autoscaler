@@ -23,9 +23,9 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
 
-	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider"
-	ca_context "k8s.io/autoscaler/cluster-autoscaler/context"
-	"k8s.io/autoscaler/cluster-autoscaler/utils/errors"
+	"k8s.io/cluster-autoscaler/pkg/cloudprovider"
+	ca_context "k8s.io/cluster-autoscaler/pkg/context"
+	"k8s.io/cluster-autoscaler/pkg/utils/errors"
 )
 
 // ScaleDownCandidatesDelayProcessor is a processor to filter out

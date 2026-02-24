@@ -20,7 +20,7 @@ import (
 	"sync"
 	"time"
 
-	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider"
+	"k8s.io/cluster-autoscaler/pkg/cloudprovider"
 )
 
 // NodeGroupChangeObserver is an observer of:

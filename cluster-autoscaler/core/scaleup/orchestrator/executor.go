@@ -22,17 +22,17 @@ import (
 	"time"
 
 	apiv1 "k8s.io/api/core/v1"
-	ca_context "k8s.io/autoscaler/cluster-autoscaler/context"
-	"k8s.io/autoscaler/cluster-autoscaler/simulator/framework"
+	ca_context "k8s.io/cluster-autoscaler/pkg/context"
+	"k8s.io/cluster-autoscaler/pkg/simulator/framework"
 	"k8s.io/klog/v2"
 
-	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider"
-	"k8s.io/autoscaler/cluster-autoscaler/metrics"
-	"k8s.io/autoscaler/cluster-autoscaler/observers/nodegroupchange"
-	"k8s.io/autoscaler/cluster-autoscaler/processors/nodegroups/asyncnodegroups"
-	"k8s.io/autoscaler/cluster-autoscaler/processors/nodegroupset"
-	"k8s.io/autoscaler/cluster-autoscaler/utils/errors"
-	"k8s.io/autoscaler/cluster-autoscaler/utils/gpu"
+	"k8s.io/cluster-autoscaler/pkg/cloudprovider"
+	"k8s.io/cluster-autoscaler/pkg/metrics"
+	"k8s.io/cluster-autoscaler/pkg/observers/nodegroupchange"
+	"k8s.io/cluster-autoscaler/pkg/processors/nodegroups/asyncnodegroups"
+	"k8s.io/cluster-autoscaler/pkg/processors/nodegroupset"
+	"k8s.io/cluster-autoscaler/pkg/utils/errors"
+	"k8s.io/cluster-autoscaler/pkg/utils/gpu"
 )
 
 // ScaleUpExecutor scales up node groups.

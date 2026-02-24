@@ -23,7 +23,6 @@ import (
 
 	"k8s.io/client-go/informers"
 	cqv1alpha1 "k8s.io/cluster-autoscaler/apis/capacityquota/autoscaling.x-k8s.io/v1alpha1"
-	cloudBuilder "k8s.io/cluster-autoscaler/pkg/cloudprovider/builder"
 	ca_context "k8s.io/cluster-autoscaler/pkg/context"
 	coreoptions "k8s.io/cluster-autoscaler/pkg/core/options"
 	"k8s.io/cluster-autoscaler/pkg/core/scaledown/pdb"
@@ -138,9 +137,6 @@ func initializeDefaultOptions(ctx context.Context, opts *coreoptions.AutoscalerO
 	}
 	if opts.DraProvider == nil && opts.DynamicResourceAllocationEnabled {
 		opts.DraProvider = draprovider.NewProviderFromInformers(informerFactory)
-	}
-	if opts.CloudProvider == nil {
-		opts.CloudProvider = cloudBuilder.NewCloudProvider(opts, informerFactory)
 	}
 	if opts.ExpanderStrategy == nil {
 		expanderFactory := factory.NewFactory()
