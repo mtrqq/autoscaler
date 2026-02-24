@@ -36,8 +36,8 @@ func newFakeCapacityQuotas(fake *FakeAutoscalingV1alpha1, namespace string) type
 		gentype.NewFakeClientWithListAndApply[*v1alpha1.CapacityQuota, *v1alpha1.CapacityQuotaList, *autoscalingxk8siov1alpha1.CapacityQuotaApplyConfiguration](
 			fake.Fake,
 			namespace,
-			v1alpha1.SchemeGroupVersion.WithResource("capacityquotas"),
-			v1alpha1.SchemeGroupVersion.WithKind("CapacityQuota"),
+			v1alpha1.GroupVersion.WithResource().WithResource("capacityquotas"),
+			v1alpha1.GroupVersion.WithKind("CapacityQuota"),
 			func() *v1alpha1.CapacityQuota { return &v1alpha1.CapacityQuota{} },
 			func() *v1alpha1.CapacityQuotaList { return &v1alpha1.CapacityQuotaList{} },
 			func(dst, src *v1alpha1.CapacityQuotaList) { dst.ListMeta = src.ListMeta },

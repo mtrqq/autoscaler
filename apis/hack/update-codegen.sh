@@ -38,11 +38,11 @@ for crd in $crds
 do
   kube::codegen::gen_client \
     --output-pkg "k8s.io/cluster-autoscaler/apis/$crd/client" \
-    --output-dir "${REPO_ROOT}/cluster-autoscaler/apis/$crd/client" \
+    --output-dir "${REPO_ROOT}/apis/$crd/client" \
     --boilerplate "${REPO_ROOT}/hack/boilerplate/boilerplate.generatego.txt" \
     --with-watch \
     --with-applyconfig \
-    "${REPO_ROOT}/cluster-autoscaler/apis/$crd"
+    "${REPO_ROOT}/apis/$crd"
 done
 
 # We need to clean up the go.mod file since code-generator adds temporary library to the go.mod file.
