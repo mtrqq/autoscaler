@@ -712,11 +712,10 @@ func (m *caMetrics) RegisterError(err errors.AutoscalerError) {
 }
 
 // RegisterScaleUp records number of nodes added by scale up
-func (m *caMetrics) RegisterScaleUp(nodesCount int, gpuResourceName, gpuType, draDrivers string) {
+func (m *caMetrics) RegisterScaleUp(nodesCount int, gpuResourceName, gpuType string) {
 	m.scaleUpCount.With(map[string]string{
 		"gpu_resource_name": gpuResourceName,
 		"gpu_name":          gpuType,
-		"dra_drivers":       draDrivers,
 	}).Add(float64(nodesCount))
 
 	if gpuType != gpu.MetricsNoGPU {
@@ -725,12 +724,11 @@ func (m *caMetrics) RegisterScaleUp(nodesCount int, gpuResourceName, gpuType, dr
 }
 
 // RegisterFailedScaleUp records a failed scale-up operation
-func (m *caMetrics) RegisterFailedScaleUp(reason FailedScaleUpReason, gpuResourceName, gpuType, draDrivers string) {
+func (m *caMetrics) RegisterFailedScaleUp(reason FailedScaleUpReason, gpuResourceName, gpuType string) {
 	m.failedScaleUpCount.With(map[string]string{
 		"reason":            string(reason),
 		"gpu_resource_name": gpuResourceName,
 		"gpu_name":          gpuType,
-		"dra_drivers":       draDrivers,
 	}).Inc()
 
 	if gpuType != gpu.MetricsNoGPU {
@@ -739,12 +737,11 @@ func (m *caMetrics) RegisterFailedScaleUp(reason FailedScaleUpReason, gpuResourc
 }
 
 // RegisterScaleDown records number of nodes removed by scale down
-func (m *caMetrics) RegisterScaleDown(nodesCount int, gpuResourceName, gpuType string, reason NodeScaleDownReason, draDrivers string) {
+func (m *caMetrics) RegisterScaleDown(nodesCount int, gpuResourceName, gpuType string, reason NodeScaleDownReason) {
 	m.scaleDownCount.With(map[string]string{
 		"reason":            string(reason),
 		"gpu_resource_name": gpuResourceName,
 		"gpu_name":          gpuType,
-		"dra_drivers":       draDrivers,
 	}).Add(float64(nodesCount))
 
 	if gpuType != gpu.MetricsNoGPU {

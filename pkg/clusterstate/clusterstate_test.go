@@ -1738,69 +1738,10 @@ func TestFailedScaleUpWithDra(t *testing.T) {
 	mockMetrics.AssertCalled(t, "RegisterFailedScaleUp", metrics.FailedScaleUpReason("RESOURCE_POOL_EXHAUSTED"), "", "", "driver1,driver2")
 }
 
-func TestFailedScaleUpWithDraAndGpu(t *testing.T) {
-	now := time.Now()
-
-	builder := testprovider.NewTestCloudProviderBuilder()
-	provider := builder.WithNodeGpuConfig(func(node *apiv1.Node) *cloudprovider.GpuConfig {
-		return &cloudprovider.GpuConfig{
-			Type:          "gpu-type",
-			Label:         "gpu-resource-label",
-			DraDriverName: "gpu-driver",
-		}
-	}).Build()
-	mockedNodeGroup := &mockprovider.NodeGroup{}
-	mockedNodeGroup.On("Id").Return("ng1")
-	mockedNodeGroup.On("Nodes").Return([]cloudprovider.Instance{
-		{
-			Id: "instance1",
-			Status: &cloudprovider.InstanceStatus{
-				State: cloudprovider.InstanceCreating,
-				ErrorInfo: &cloudprovider.InstanceErrorInfo{
-					ErrorClass:   cloudprovider.OutOfResourcesErrorClass,
-					ErrorCode:    "RESOURCE_POOL_EXHAUSTED",
-					ErrorMessage: "",
-				},
-			},
-		},
-	}, nil)
-	mockedNodeGroup.On("Autoprovisioned").Return(false)
-	mockedNodeGroup.On("TargetSize").Return(1, nil)
-	node := BuildTestNode("ng1_1", 1000, 1000)
-	nodeInfo := framework.NewTestNodeInfo(node)
-	nodeInfo.LocalResourceSlices = []*v1.ResourceSlice{
-		{
-			Spec: v1.ResourceSliceSpec{
-				Driver: "driver1",
-			},
-		},
-		{
-			Spec: v1.ResourceSliceSpec{
-				Driver: "driver2",
-			},
-		},
-	}
-	mockedNodeGroup.On("TemplateNodeInfo").Return(nodeInfo, nil)
-	mockedNodeGroup.On("GetOptions", mock.Anything).Return(&config.NodeGroupAutoscalingOptions{}, nil)
-	provider.InsertNodeGroup(mockedNodeGroup)
-
-	fakeClient := &fake.Clientset{}
-	fakeLogRecorder, _ := utils.NewStatusMapRecorder(fakeClient, "kube-system", kube_record.NewFakeRecorder(5), false, "my-cool-configmap")
-	mockMetrics := &mockMetrics{}
-	mockMetrics.On("RegisterFailedScaleUp", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
-	clusterstate := newClusterStateRegistry(provider, ClusterStateRegistryConfig{}, fakeLogRecorder, newBackoff(), nodegroupconfig.NewDefaultNodeGroupConfigProcessor(config.NodeGroupAutoscalingOptions{MaxNodeProvisionTime: 15 * time.Minute}), asyncnodegroups.NewDefaultAsyncNodeGroupStateChecker(), mockMetrics)
-	clusterstate.RegisterScaleUp(mockedNodeGroup, 1, now)
-
-	// UpdateNodes will trigger handleInstanceCreationErrors
-	err := clusterstate.UpdateNodes([]*apiv1.Node{}, nil, now)
-	assert.NoError(t, err)
-	mockMetrics.AssertCalled(t, "RegisterFailedScaleUp", metrics.FailedScaleUpReason("RESOURCE_POOL_EXHAUSTED"), "dra_gpu-driver", "not-listed", "driver1,driver2")
-}
-
 type mockMetrics struct {
 	mock.Mock
 }
 
-func (m *mockMetrics) RegisterFailedScaleUp(reason metrics.FailedScaleUpReason, gpuResourceName, gpuType, draDrivers string) {
-	m.Called(reason, gpuResourceName, gpuType, draDrivers)
+func (m *mockMetrics) RegisterFailedScaleUp(reason metrics.FailedScaleUpReason, gpuResourceName, gpuType string) {
+	m.Called(reason, gpuResourceName, gpuType)
 }
