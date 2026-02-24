@@ -19,7 +19,6 @@ package config
 import (
 	"time"
 
-	gce_localssdsize "k8s.io/cluster-autoscaler/pkg/cloudprovider/gce/localssdsize"
 	kubelet_config "k8s.io/kubernetes/pkg/kubelet/apis/config"
 	scheduler_config "k8s.io/kubernetes/pkg/scheduler/apis/config"
 )
@@ -58,21 +57,6 @@ type NodeGroupAutoscalingOptions struct {
 	AllowNonAtomicScaleUpToMax bool
 	// IgnoreDaemonSetsUtilization sets if daemonsets utilization should be considered during node scale-down
 	IgnoreDaemonSetsUtilization bool
-}
-
-// GCEOptions contain autoscaling options specific to GCE cloud provider.
-type GCEOptions struct {
-	// ConcurrentRefreshes is the maximum number of concurrently refreshed instance groups or instance templates or zones with mig instances
-	ConcurrentRefreshes int
-	// MigInstancesMinRefreshWaitTime is the minimum time which needs to pass before GCE MIG instances from a given MIG can be refreshed.
-	MigInstancesMinRefreshWaitTime time.Duration
-	// DomainUrl is the GCE url used to make calls to GCE API.
-	DomainUrl string
-	// LocalSSDDiskSizeProvider provides local ssd disk size based on machine type
-	LocalSSDDiskSizeProvider gce_localssdsize.LocalSSDSizeProvider
-	// BulkMigInstancesListingEnabled means that cluster instances should be listed in bulk instead of per mig.
-	// Instances of migs having instances in creating or deleting state are re-fetched using igm.ListInstances. Inconsistencies are handled by re-fetching using igm.ListInstances
-	BulkMigInstancesListingEnabled bool
 }
 
 const (
@@ -235,8 +219,6 @@ type AutoscalingOptions struct {
 	// ScaleFromUnschedulable tells the autoscaler to ignore a node's .spec.unschedulable field when creating a node template.
 	// Specifically, this will cause the autoscaler to set the node template's .spec.unschedulable field to false.
 	ScaleFromUnschedulable bool
-	// GCEOptions contain autoscaling options specific to GCE cloud provider.
-	GCEOptions GCEOptions
 	// KubeClientOpts specify options for kube client
 	KubeClientOpts KubeClientOptions
 	// ClusterAPICloudConfigAuthoritative tells the Cluster API provider to treat the CloudConfig option as authoritative and
