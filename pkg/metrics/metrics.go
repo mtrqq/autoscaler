@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"k8s.io/cluster-autoscaler/pkg/simulator"
-
 	"k8s.io/cluster-autoscaler/pkg/utils/errors"
 	"k8s.io/cluster-autoscaler/pkg/utils/gpu"
 	"k8s.io/component-base/metrics"
@@ -96,8 +95,6 @@ const (
 	PodEvictionSucceed PodEvictionResult = "succeeded"
 	// PodEvictionFailed means creation of the pod eviction object failed
 	PodEvictionFailed PodEvictionResult = "failed"
-
-	gpuNodeMetricsDeprecatedVersion = "1.35.0"
 )
 
 // Names of Cluster Autoscaler operations
@@ -148,7 +145,7 @@ type caMetrics struct {
 
 	// Metrics related to autoscaler operations
 	errorsCount                      *k8smetrics.CounterVec
-	scaleUpCount                     *k8smetrics.CounterVec
+	scaleUpCount                     *k8smetrics.Counter
 	gpuScaleUpCount                  *k8smetrics.CounterVec
 	failedScaleUpCount               *k8smetrics.CounterVec
 	failedGPUScaleUpCount            *k8smetrics.CounterVec
@@ -330,20 +327,19 @@ func newCaMetrics() *caMetrics {
 			}, []string{"type"},
 		),
 
-		scaleUpCount: k8smetrics.NewCounterVec(
+		scaleUpCount: k8smetrics.NewCounter(
 			&k8smetrics.CounterOpts{
 				Namespace: caNamespace,
 				Name:      "scaled_up_nodes_total",
 				Help:      "Number of nodes added by CA.",
-			}, []string{"gpu_resource_name", "gpu_name", "dra_drivers"},
+			},
 		),
 
 		gpuScaleUpCount: k8smetrics.NewCounterVec(
 			&k8smetrics.CounterOpts{
-				Namespace:         caNamespace,
-				Name:              "scaled_up_gpu_nodes_total",
-				Help:              "Number of GPU nodes added by CA, by GPU name.",
-				DeprecatedVersion: gpuNodeMetricsDeprecatedVersion,
+				Namespace: caNamespace,
+				Name:      "scaled_up_gpu_nodes_total",
+				Help:      "Number of GPU nodes added by CA, by GPU name.",
 			}, []string{"gpu_resource_name", "gpu_name"},
 		),
 
@@ -352,15 +348,14 @@ func newCaMetrics() *caMetrics {
 				Namespace: caNamespace,
 				Name:      "failed_scale_ups_total",
 				Help:      "Number of times scale-up operation has failed.",
-			}, []string{"reason", "gpu_resource_name", "gpu_name", "dra_drivers"},
+			}, []string{"reason"},
 		),
 
 		failedGPUScaleUpCount: k8smetrics.NewCounterVec(
 			&k8smetrics.CounterOpts{
-				Namespace:         caNamespace,
-				Name:              "failed_gpu_scale_ups_total",
-				Help:              "Number of times scale-up operation has failed.",
-				DeprecatedVersion: gpuNodeMetricsDeprecatedVersion,
+				Namespace: caNamespace,
+				Name:      "failed_gpu_scale_ups_total",
+				Help:      "Number of times scale-up operation has failed.",
 			}, []string{"reason", "gpu_resource_name", "gpu_name"},
 		),
 
@@ -369,15 +364,14 @@ func newCaMetrics() *caMetrics {
 				Namespace: caNamespace,
 				Name:      "scaled_down_nodes_total",
 				Help:      "Number of nodes removed by CA.",
-			}, []string{"reason", "gpu_resource_name", "gpu_name", "dra_drivers"},
+			}, []string{"reason"},
 		),
 
 		gpuScaleDownCount: k8smetrics.NewCounterVec(
 			&k8smetrics.CounterOpts{
-				Namespace:         caNamespace,
-				Name:              "scaled_down_gpu_nodes_total",
-				Help:              "Number of GPU nodes removed by CA, by reason and GPU name.",
-				DeprecatedVersion: gpuNodeMetricsDeprecatedVersion,
+				Namespace: caNamespace,
+				Name:      "scaled_down_gpu_nodes_total",
+				Help:      "Number of GPU nodes removed by CA, by reason and GPU name.",
 			}, []string{"reason", "gpu_resource_name", "gpu_name"},
 		),
 
@@ -563,11 +557,8 @@ func (m *caMetrics) InitMetrics() {
 	}
 
 	for _, reason := range []FailedScaleUpReason{CloudProviderError, APIError, Timeout} {
-		m.failedScaleUpCount.WithLabelValues(string(reason), "", "", "").Add(0)
-	}
-
-	for _, reason := range []NodeScaleDownReason{Underutilized, Empty, Unready} {
-		m.scaleDownCount.WithLabelValues(string(reason), "", "", "").Add(0)
+		m.scaleDownCount.WithLabelValues(string(reason)).Add(0)
+		m.failedScaleUpCount.WithLabelValues(string(reason)).Add(0)
 	}
 
 	for _, result := range []PodEvictionResult{PodEvictionSucceed, PodEvictionFailed} {
@@ -713,11 +704,7 @@ func (m *caMetrics) RegisterError(err errors.AutoscalerError) {
 
 // RegisterScaleUp records number of nodes added by scale up
 func (m *caMetrics) RegisterScaleUp(nodesCount int, gpuResourceName, gpuType string) {
-	m.scaleUpCount.With(map[string]string{
-		"gpu_resource_name": gpuResourceName,
-		"gpu_name":          gpuType,
-	}).Add(float64(nodesCount))
-
+	m.scaleUpCount.Add(float64(nodesCount))
 	if gpuType != gpu.MetricsNoGPU {
 		m.gpuScaleUpCount.WithLabelValues(gpuResourceName, gpuType).Add(float64(nodesCount))
 	}
@@ -725,12 +712,7 @@ func (m *caMetrics) RegisterScaleUp(nodesCount int, gpuResourceName, gpuType str
 
 // RegisterFailedScaleUp records a failed scale-up operation
 func (m *caMetrics) RegisterFailedScaleUp(reason FailedScaleUpReason, gpuResourceName, gpuType string) {
-	m.failedScaleUpCount.With(map[string]string{
-		"reason":            string(reason),
-		"gpu_resource_name": gpuResourceName,
-		"gpu_name":          gpuType,
-	}).Inc()
-
+	m.failedScaleUpCount.WithLabelValues(string(reason)).Inc()
 	if gpuType != gpu.MetricsNoGPU {
 		m.failedGPUScaleUpCount.WithLabelValues(string(reason), gpuResourceName, gpuType).Inc()
 	}
@@ -738,12 +720,7 @@ func (m *caMetrics) RegisterFailedScaleUp(reason FailedScaleUpReason, gpuResourc
 
 // RegisterScaleDown records number of nodes removed by scale down
 func (m *caMetrics) RegisterScaleDown(nodesCount int, gpuResourceName, gpuType string, reason NodeScaleDownReason) {
-	m.scaleDownCount.With(map[string]string{
-		"reason":            string(reason),
-		"gpu_resource_name": gpuResourceName,
-		"gpu_name":          gpuType,
-	}).Add(float64(nodesCount))
-
+	m.scaleDownCount.WithLabelValues(string(reason)).Add(float64(nodesCount))
 	if gpuType != gpu.MetricsNoGPU {
 		m.gpuScaleDownCount.WithLabelValues(string(reason), gpuResourceName, gpuType).Add(float64(nodesCount))
 	}
