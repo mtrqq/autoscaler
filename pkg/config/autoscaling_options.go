@@ -134,8 +134,6 @@ type AutoscalingOptions struct {
 	ParallelScaleUp bool
 	// CloudConfig is the path to the cloud provider configuration file. Empty string for no configuration file.
 	CloudConfig string
-	// CloudProviderName sets the type of the cloud provider CA is about to run in. Allowed values: gce, aws
-	CloudProviderName string
 	// NodeGroups is the list of node groups a.k.a autoscaling targets
 	NodeGroups []string
 	// EnforceNodeGroupMinSize is used to allow CA to scale up the node group to the configured min size if needed.
