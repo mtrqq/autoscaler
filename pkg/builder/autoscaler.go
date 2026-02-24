@@ -67,13 +67,15 @@ import (
 
 // AutoscalerBuilder is the builder object for creating a Cluster Autoscaler instance.
 type AutoscalerBuilder struct {
-	options              config.AutoscalingOptions
-	debuggingSnapshotter debuggingsnapshot.DebuggingSnapshotter
-	manager              manager.Manager
-	kubeClient           kubernetes.Interface
-	podObserver          *loop.UnschedulablePodObserver
-	cloudProvider        cloudprovider.CloudProvider
-	informerFactory      informers.SharedInformerFactory
+	options                  config.AutoscalingOptions
+	debuggingSnapshotter     debuggingsnapshot.DebuggingSnapshotter
+	manager                  manager.Manager
+	kubeClient               kubernetes.Interface
+	podObserver              *loop.UnschedulablePodObserver
+	cloudProvider            cloudprovider.CloudProvider
+	informerFactory          informers.SharedInformerFactory
+	nodeInfoComparator       nodegroupset.NodeInfoComparator
+	templateNodeInfoProvider nodeinfosprovider.TemplateNodeInfoProvider
 }
 
 // New creates a builder with default options.
@@ -119,6 +121,18 @@ func (b *AutoscalerBuilder) WithInformerFactory(f informers.SharedInformerFactor
 	return b
 }
 
+// WithNodeInfoComparator allows injecting a node info comparator.
+func (b *AutoscalerBuilder) WithNodeInfoComparator(nodeInfoComparator nodegroupset.NodeInfoComparator) *AutoscalerBuilder {
+	b.nodeInfoComparator = nodeInfoComparator
+	return b
+}
+
+// WithTemplateNodeInfoProvider allows injecting a template node info provider.
+func (b *AutoscalerBuilder) WithTemplateNodeInfoProvider(templateNodeInfoProvider nodeinfosprovider.TemplateNodeInfoProvider) *AutoscalerBuilder {
+	b.templateNodeInfoProvider = templateNodeInfoProvider
+	return b
+}
+
 // Build constructs the Autoscaler based on the provided configuration.
 func (b *AutoscalerBuilder) Build(ctx context.Context) (core.Autoscaler, *loop.LoopTrigger, error) {
 	// Get AutoscalingOptions from flags.
@@ -135,6 +149,9 @@ func (b *AutoscalerBuilder) Build(ctx context.Context) (core.Autoscaler, *loop.L
 	}
 	if b.informerFactory == nil {
 		return nil, nil, fmt.Errorf("informerFactory is missing: ensure WithInformerFactory() is called")
+	}
+	if b.cloudProvider == nil {
+		return nil, nil, fmt.Errorf("cloudProvider is missing: ensure WithCloudProvider() is called")
 	}
 
 	fwHandle, err := framework.NewHandle(ctx, b.informerFactory, autoscalingOptions.SchedulerConfig, autoscalingOptions.DynamicResourceAllocationEnabled, autoscalingOptions.CSINodeAwareSchedulingEnabled)
@@ -160,7 +177,6 @@ func (b *AutoscalerBuilder) Build(ctx context.Context) (core.Autoscaler, *loop.L
 	}
 
 	opts.Processors = ca_processors.DefaultProcessors(autoscalingOptions)
-	opts.Processors.TemplateNodeInfoProvider = nodeinfosprovider.NewDefaultTemplateNodeInfoProvider(&autoscalingOptions.NodeInfoCacheExpireTime, autoscalingOptions.ForceDaemonSets)
 	podListProcessor := podlistprocessor.NewDefaultPodListProcessor(scheduling.ScheduleAnywhere)
 
 	var ProvisioningRequestInjector *provreq.ProvisioningRequestPodsInjector
@@ -264,30 +280,20 @@ func (b *AutoscalerBuilder) Build(ctx context.Context) (core.Autoscaler, *loop.L
 	}
 	opts.Processors.ScaleDownNodeProcessor = cp
 
-	var nodeInfoComparator nodegroupset.NodeInfoComparator
-	if len(autoscalingOptions.BalancingLabels) > 0 {
-		nodeInfoComparator = nodegroupset.CreateLabelNodeInfoComparator(autoscalingOptions.BalancingLabels)
-	} else {
-		// TODO elmiko - now that we are passing the AutoscalerOptions in to the
-		// NewCloudProvider function, we should migrate these cloud provider specific
-		// configurations to the NewCloudProvider method so that we remove more provider
-		// code from the core.
-		nodeInfoComparatorBuilder := nodegroupset.CreateGenericNodeInfoComparator
-		if autoscalingOptions.CloudProviderName == cloudprovider.AzureProviderName {
-			nodeInfoComparatorBuilder = nodegroupset.CreateAzureNodeInfoComparator
-		} else if autoscalingOptions.CloudProviderName == cloudprovider.AwsProviderName {
-			nodeInfoComparatorBuilder = nodegroupset.CreateAwsNodeInfoComparator
-			opts.Processors.TemplateNodeInfoProvider = nodeinfosprovider.NewAsgTagResourceNodeInfoProvider(&autoscalingOptions.NodeInfoCacheExpireTime, autoscalingOptions.ForceDaemonSets)
-		} else if autoscalingOptions.CloudProviderName == cloudprovider.GceProviderName {
-			nodeInfoComparatorBuilder = nodegroupset.CreateGceNodeInfoComparator
-			opts.Processors.TemplateNodeInfoProvider = nodeinfosprovider.NewAnnotationNodeInfoProvider(&autoscalingOptions.NodeInfoCacheExpireTime, autoscalingOptions.ForceDaemonSets)
-		}
-		nodeInfoComparator = nodeInfoComparatorBuilder(autoscalingOptions.BalancingExtraIgnoredLabels, autoscalingOptions.NodeGroupSetRatios)
+	nodeInfoComparator := b.nodeInfoComparator
+	if nodeInfoComparator == nil {
+		// Create a default node info comparator if not provided, do not error out.
+		nodeInfoComparator = nodegroupset.CreateGenericNodeInfoComparator([]string{}, config.NewDefaultNodeGroupDifferenceRatios())
 	}
+	opts.Processors.NodeGroupSetProcessor = &nodegroupset.BalancingNodeGroupSetProcessor{Comparator: nodeInfoComparator}
 
-	opts.Processors.NodeGroupSetProcessor = &nodegroupset.BalancingNodeGroupSetProcessor{
-		Comparator: nodeInfoComparator,
+	nodeInfoProvider := b.templateNodeInfoProvider
+	if nodeInfoProvider == nil {
+		cacheExpireTime := &autoscalingOptions.NodeInfoCacheExpireTime
+		forceDaemonSets := autoscalingOptions.ForceDaemonSets
+		nodeInfoProvider = nodeinfosprovider.NewDefaultTemplateNodeInfoProvider(cacheExpireTime, forceDaemonSets)
 	}
+	opts.Processors.TemplateNodeInfoProvider = nodeInfoProvider
 
 	// These metrics should be published only once.
 	metrics.UpdateCPULimitsCores(autoscalingOptions.MinCoresTotal, autoscalingOptions.MaxCoresTotal)

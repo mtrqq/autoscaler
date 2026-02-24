@@ -90,13 +90,6 @@ func (c *TestConfig) ResolveOptions() config.AutoscalingOptions {
 	return opts
 }
 
-// WithCloudProviderName sets the cloud provider name.
-func WithCloudProviderName(name string) AutoscalingOptionOverride {
-	return func(o *config.AutoscalingOptions) {
-		o.CloudProviderName = name
-	}
-}
-
 // WithScaleDownUnneededTime sets the scale down unneeded time option.
 func WithScaleDownUnneededTime(d time.Duration) AutoscalingOptionOverride {
 	return func(o *config.AutoscalingOptions) {

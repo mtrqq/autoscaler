@@ -206,12 +206,6 @@ type AutoscalingOptions struct {
 	// status that should be removed when creating a node template for scheduling.
 	// The status taints are expected to appear during node lifetime, after startup.
 	StatusTaints []string
-	// BalancingExtraIgnoredLabels is a list of labels to additionally ignore when comparing if two node groups are similar.
-	// Labels in BasicIgnoredLabels and the cloud provider-specific ignored labels are always ignored.
-	BalancingExtraIgnoredLabels []string
-	// BalancingLabels is a list of labels to use when comparing if two node groups are similar.
-	// If this is set, only labels are used to compare node groups. It is mutually exclusive with BalancingExtraIgnoredLabels.
-	BalancingLabels []string
 	// AWSUseStaticInstanceList tells if AWS cloud provider use static instance type list or dynamically fetch from remote APIs.
 	AWSUseStaticInstanceList bool
 	// ScaleFromUnschedulable tells the autoscaler to ignore a node's .spec.unschedulable field when creating a node template.

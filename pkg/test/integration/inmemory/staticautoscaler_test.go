@@ -37,7 +37,6 @@ const (
 func TestStaticAutoscaler_FullLifecycle(t *testing.T) {
 	config := integration.NewTestConfig().
 		WithOverrides(
-			integration.WithCloudProviderName("gce"),
 			integration.WithScaleDownUnneededTime(unneededTime),
 		)
 

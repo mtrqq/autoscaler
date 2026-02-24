@@ -162,15 +162,9 @@ var (
 
 	startupTaintsFlag         = multiStringFlag("startup-taint", "Specifies a taint to ignore in node templates when considering to scale a node group (Equivalent to ignore-taint)")
 	statusTaintsFlag          = multiStringFlag("status-taint", "Specifies a taint to ignore in node templates when considering to scale a node group but nodes will not be treated as unready")
-	balancingIgnoreLabelsFlag = multiStringFlag("balancing-ignore-label", "Specifies a label to ignore in addition to the basic and cloud-provider set of labels when comparing if two node groups are similar")
-	balancingLabelsFlag       = multiStringFlag("balancing-label", "Specifies a label to use for comparing if two node groups are similar, rather than the built in heuristics. Setting this flag disables all other comparison logic, and cannot be combined with --balancing-ignore-label.")
 	awsUseStaticInstanceList  = flag.Bool("aws-use-static-instance-list", false, "Should CA fetch instance types in runtime or use a static list. AWS only")
 	scaleFromUnschedulable    = flag.Bool("scale-from-unschedulable", false, "Specifies that the CA should ignore a node's .spec.unschedulable field in node templates when considering to scale a node group.")
 
-	// GCE specific flags
-	concurrentGceRefreshes             = flag.Int("gce-concurrent-refreshes", 1, "Maximum number of concurrent refreshes per cloud object type.")
-	gceMigInstancesMinRefreshWaitTime  = flag.Duration("gce-mig-instances-min-refresh-wait-time", 5*time.Second, "The minimum time which needs to pass before GCE MIG instances from a given MIG can be refreshed.")
-	bulkGceMigInstancesListingEnabled  = flag.Bool("bulk-mig-instances-listing-enabled", false, "Fetch GCE mig instances in bulk instead of per mig")
 	enableProfiling                    = flag.Bool("profiling", false, "Is debug/pprof endpoint enabled")
 	clusterAPICloudConfigAuthoritative = flag.Bool("clusterapi-cloud-config-authoritative", false, "Treat the cloud-config flag authoritatively (do not fallback to using kubeconfig flag). ClusterAPI only")
 	cordonNodeBeforeTerminate          = flag.Bool("cordon-node-before-terminating", true, "Should CA cordon nodes before terminating during downscale process")
@@ -359,8 +353,6 @@ func createAutoscalingOptions() config.AutoscalingOptions {
 		NewPodScaleUpDelay:               *newPodScaleUpDelay,
 		StartupTaints:                    append(*ignoreTaintsFlag, *startupTaintsFlag...),
 		StatusTaints:                     *statusTaintsFlag,
-		BalancingExtraIgnoredLabels:      *balancingIgnoreLabelsFlag,
-		BalancingLabels:                  *balancingLabelsFlag,
 		KubeClientOpts: config.KubeClientOptions{
 			Master:          *kubernetes,
 			KubeConfigPath:  *kubeConfigFile,

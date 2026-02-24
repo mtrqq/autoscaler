@@ -41,7 +41,6 @@ func TestAutoscalerBuilderNoError(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 
 		options := config.AutoscalingOptions{
-			CloudProviderName: "gce",
 			EstimatorName:     estimator.BinpackingEstimatorName,
 			ExpanderNames:     expander.LeastWasteExpanderName,
 		}
