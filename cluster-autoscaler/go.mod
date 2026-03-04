@@ -69,6 +69,7 @@ require (
 	sigs.k8s.io/cloud-provider-azure/pkg/azclient v0.9.2
 	sigs.k8s.io/controller-runtime v0.22.4
 	sigs.k8s.io/yaml v1.6.0
+	k8s.io/cluster-autoscaler v0.0.0
 )
 
 require (
@@ -320,3 +321,5 @@ replace k8s.io/autoscaler/cluster-autoscaler/apis => ./apis
 replace k8s.io/cri-client => k8s.io/cri-client v0.35.0
 
 replace k8s.io/externaljwt => k8s.io/externaljwt v0.35.0
+
+replace k8s.io/cluster-autoscaler => /usr/local/google/home/mfuhol/dev/autoscaler-in-oss
