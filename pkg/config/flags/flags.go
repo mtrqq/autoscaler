@@ -232,7 +232,7 @@ func (p *AutoscalingFlags) AddFlags(fs *pflag.FlagSet) {
 
 }
 
-func (p *AutoscalingFlags) Options() (config.AutoscalingOptions, error) {
+func (p *AutoscalingFlags) AutoscalingOptions() (config.AutoscalingOptions, error) {
 	minCoresTotal, maxCoresTotal, err := parseMinMaxFlag(p.coresTotal)
 	if err != nil {
 		return config.AutoscalingOptions{}, fmt.Errorf("Failed to parse flags: %w", err)
