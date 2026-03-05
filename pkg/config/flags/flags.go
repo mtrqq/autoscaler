@@ -296,11 +296,9 @@ func (p *AutoscalingFlags) AutoscalingOptions() (config.AutoscalingOptions, erro
 
 	p.o.AllowedSchedulers = allowedSchedulers
 	p.o.BypassedSchedulers = scheduler_util.SchedulersMap(p.bypassedSchedulers)
-	p.o.DynamicResourceAllocationEnabled = p.o.DynamicResourceAllocationEnabled
 	p.o.StartupTaints = slices.Concat(p.ignoreTaints, p.startupTaints)
 	p.o.MaxGracefulTerminationSec = p.maxGracefulTerminationSec
 	p.o.NodeGroupAutoDiscovery = p.nodeGroupAutodiscovery
-	p.o.PredicateParallelism = p.o.PredicateParallelism
 	p.o.DrainPriorityConfig = drainPriorityConfigMap
 	p.o.NodeGroups = p.nodeGroups
 	p.o.StatusTaints = p.statusTaints
@@ -310,7 +308,6 @@ func (p *AutoscalingFlags) AutoscalingOptions() (config.AutoscalingOptions, erro
 	p.o.MaxMemoryTotal = maxMemoryTotal
 	p.o.GpuTotal = parsedGpuTotal
 	p.o.SchedulerConfig = parsedSchedConfig
-	p.o.ScaleDownEnabled = p.o.ScaleDownEnabled
 
 	return p.o, nil
 }
