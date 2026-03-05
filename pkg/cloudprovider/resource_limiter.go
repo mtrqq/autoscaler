@@ -23,6 +23,7 @@ import (
 
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/cluster-autoscaler/pkg/config"
 )
 
 // ResourceLimiter contains limits (max, min) for resources (cores, memory etc.).
@@ -34,6 +35,24 @@ type ResourceLimiter struct {
 // ID returns the identifier of the limiter.
 func (r *ResourceLimiter) ID() string {
 	return "cluster-wide"
+}
+
+// NewResourceLimiterFromAutoscalingOptions creates new instance of ResourceLimiter
+// reading limits from AutoscalingOptions struct.
+func NewResourceLimiterFromAutoscalingOptions(options config.AutoscalingOptions) *ResourceLimiter {
+	minResources := make(map[string]int64)
+	maxResources := make(map[string]int64)
+
+	minResources[ResourceNameCores] = options.MinCoresTotal
+	minResources[ResourceNameMemory] = options.MinMemoryTotal
+	maxResources[ResourceNameCores] = options.MaxCoresTotal
+	maxResources[ResourceNameMemory] = options.MaxMemoryTotal
+
+	for _, gpuLimits := range options.GpuTotal {
+		minResources[gpuLimits.GpuType] = gpuLimits.Min
+		maxResources[gpuLimits.GpuType] = gpuLimits.Max
+	}
+	return NewResourceLimiter(minResources, maxResources)
 }
 
 // NewResourceLimiter creates new ResourceLimiter for map. Maps are deep copied.

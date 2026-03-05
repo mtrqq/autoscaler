@@ -109,25 +109,6 @@ type AutoscalingKubeClients struct {
 	LogRecorder *utils.LogEventRecorder
 }
 
-// NewResourceLimiterFromAutoscalingOptions creates new instance of cloudprovider.ResourceLimiter
-// reading limits from AutoscalingOptions struct.
-func NewResourceLimiterFromAutoscalingOptions(options config.AutoscalingOptions) *cloudprovider.ResourceLimiter {
-	// build min/max maps for resources limits
-	minResources := make(map[string]int64)
-	maxResources := make(map[string]int64)
-
-	minResources[cloudprovider.ResourceNameCores] = options.MinCoresTotal
-	minResources[cloudprovider.ResourceNameMemory] = options.MinMemoryTotal
-	maxResources[cloudprovider.ResourceNameCores] = options.MaxCoresTotal
-	maxResources[cloudprovider.ResourceNameMemory] = options.MaxMemoryTotal
-
-	for _, gpuLimits := range options.GpuTotal {
-		minResources[gpuLimits.GpuType] = gpuLimits.Min
-		maxResources[gpuLimits.GpuType] = gpuLimits.Max
-	}
-	return cloudprovider.NewResourceLimiter(minResources, maxResources)
-}
-
 // NewAutoscalingContext returns an autoscaling context from all the necessary parameters passed via arguments
 func NewAutoscalingContext(
 	options config.AutoscalingOptions,
