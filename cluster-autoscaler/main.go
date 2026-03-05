@@ -33,20 +33,23 @@ import (
 	"k8s.io/apiserver/pkg/server/mux"
 	"k8s.io/apiserver/pkg/server/routes"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
-	cqv1alpha1 "k8s.io/autoscaler/cluster-autoscaler/apis/capacityquota/autoscaling.x-k8s.io/v1alpha1"
-	autoscalerbuilder "k8s.io/autoscaler/cluster-autoscaler/builder"
-	"k8s.io/autoscaler/cluster-autoscaler/config"
-	"k8s.io/autoscaler/cluster-autoscaler/config/flags"
-	"k8s.io/autoscaler/cluster-autoscaler/core"
-	"k8s.io/autoscaler/cluster-autoscaler/debuggingsnapshot"
-	"k8s.io/autoscaler/cluster-autoscaler/loop"
-	"k8s.io/autoscaler/cluster-autoscaler/metrics"
-	kube_util "k8s.io/autoscaler/cluster-autoscaler/utils/kubernetes"
-	"k8s.io/autoscaler/cluster-autoscaler/version"
 	"k8s.io/client-go/informers"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
+	cqv1alpha1 "k8s.io/cluster-autoscaler/apis/capacityquota/autoscaling.x-k8s.io/v1alpha1"
+	autoscalerbuilder "k8s.io/cluster-autoscaler/pkg/builder"
+	"k8s.io/cluster-autoscaler/pkg/cloudprovider"
+	"k8s.io/cluster-autoscaler/pkg/cloudprovider/kwok"
+	"k8s.io/cluster-autoscaler/pkg/config"
+	"k8s.io/cluster-autoscaler/pkg/config/flags"
+	"k8s.io/cluster-autoscaler/pkg/core"
+	"k8s.io/cluster-autoscaler/pkg/core/options"
+	"k8s.io/cluster-autoscaler/pkg/debuggingsnapshot"
+	"k8s.io/cluster-autoscaler/pkg/loop"
+	"k8s.io/cluster-autoscaler/pkg/metrics"
+	kube_util "k8s.io/cluster-autoscaler/pkg/utils/kubernetes"
+	"k8s.io/cluster-autoscaler/pkg/version"
 	kube_flag "k8s.io/component-base/cli/flag"
 	componentbaseconfig "k8s.io/component-base/config"
 	componentopts "k8s.io/component-base/config/options"
@@ -87,9 +90,11 @@ func registerSignalHandlers(autoscaler core.Autoscaler) {
 	}()
 }
 
-func run(healthCheck *metrics.HealthCheck, debuggingSnapshotter debuggingsnapshot.DebuggingSnapshotter) {
-	autoscalingOpts := flags.AutoscalingOptions()
-
+func run(
+	healthCheck *metrics.HealthCheck,
+	autoscalingOpts config.AutoscalingOptions,
+	debuggingSnapshotter debuggingsnapshot.DebuggingSnapshotter,
+) {
 	metrics.RegisterAll(autoscalingOpts.EmitPerNodeGroupMetrics)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -175,7 +180,18 @@ func mustBuildAutoscaler(ctx context.Context, opts config.AutoscalingOptions, de
 	}
 	informerFactory := informers.NewSharedInformerFactoryWithOptions(kubeClient, 0, informers.WithTransform(trim))
 
+	do := cloudprovider.NodeGroupDiscoveryOptions{
+		NodeGroupSpecs:              opts.NodeGroups,
+		NodeGroupAutoDiscoverySpecs: opts.NodeGroupAutoDiscovery,
+	}
+	rl := cloudprovider.NewResourceLimiterFromAutoscalingOptions(opts)
+
+	kwokBuilder := func(autoscalerOptions *options.AutoscalerOptions) (cloudprovider.CloudProvider, error) {
+		return kwok.BuildKwok(autoscalerOptions, do, rl, informerFactory), nil
+	}
+
 	autoscaler, trigger, err := autoscalerbuilder.New(opts).
+		WithCloudProviderBuilder(kwokBuilder).
 		WithDebuggingSnapshotter(debuggingSnapshotter).
 		WithManager(mgr).
 		WithKubeClient(kubeClient).
@@ -198,15 +214,21 @@ func main() {
 		klog.Fatalf("Failed to add logging feature flags: %v", err)
 	}
 
+	var autoscalingFlags flags.AutoscalingFlags
+
 	leaderElection := leaderElectionConfiguration()
 	// Must be called before kube_flag.InitFlags() to ensure leader election flags are parsed and available.
 	componentopts.BindLeaderElectionFlags(&leaderElection, pflag.CommandLine)
 
 	logsapi.AddFlags(loggingConfig, pflag.CommandLine)
 	featureGate.AddFlag(pflag.CommandLine)
+	autoscalingFlags.AddFlags(pflag.CommandLine)
 	kube_flag.InitFlags()
 
-	autoscalingOpts := flags.AutoscalingOptions()
+	autoscalingOpts, err := autoscalingFlags.AutoscalingOptions()
+	if err != nil {
+		klog.Fatalf("Failed to get autoscaling options: %v", err)
+	}
 
 	// The DRA feature controls whether the DRA scheduler plugin is selected in scheduler framework. The local DRA flag controls whether
 	// DRA logic is enabled in Cluster Autoscaler. The 2 values should be in sync - enabling DRA logic in CA without selecting the DRA scheduler
@@ -254,7 +276,7 @@ func main() {
 	}()
 
 	if !leaderElection.LeaderElect {
-		run(healthCheck, debuggingSnapshotter)
+		run(healthCheck, autoscalingOpts, debuggingSnapshotter)
 	} else {
 		id, err := os.Hostname()
 		if err != nil {
@@ -294,7 +316,7 @@ func main() {
 				OnStartedLeading: func(_ context.Context) {
 					// Since we are committing a suicide after losing
 					// mastership, we can safely ignore the argument.
-					run(healthCheck, debuggingSnapshotter)
+					run(healthCheck, autoscalingOpts, debuggingSnapshotter)
 				},
 				OnStoppedLeading: func() {
 					klog.Fatalf("lost master")
