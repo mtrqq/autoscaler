@@ -193,7 +193,6 @@ spec:
           imagePullPolicy: IfNotPresent
           command:
             - ./cluster-autoscaler
-            - --cloud-provider=kwok
             - --v=4
             - --stderrthreshold=info
             - --namespace=default
