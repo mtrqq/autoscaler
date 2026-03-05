@@ -65,6 +65,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
+type CloudProviderBuilder func(autoscalerOptions *coreoptions.AutoscalerOptions) (cloudprovider.CloudProvider, error)
+
 // AutoscalerBuilder is the builder object for creating a Cluster Autoscaler instance.
 type AutoscalerBuilder struct {
 	options                  config.AutoscalingOptions
@@ -73,6 +75,7 @@ type AutoscalerBuilder struct {
 	kubeClient               kubernetes.Interface
 	podObserver              *loop.UnschedulablePodObserver
 	cloudProvider            cloudprovider.CloudProvider
+	cloudProviderBuilder     CloudProviderBuilder
 	informerFactory          informers.SharedInformerFactory
 	nodeInfoComparator       nodegroupset.NodeInfoComparator
 	templateNodeInfoProvider nodeinfosprovider.TemplateNodeInfoProvider
@@ -109,9 +112,15 @@ func (b *AutoscalerBuilder) WithPodObserver(podObserver *loop.UnschedulablePodOb
 	return b
 }
 
-// WithCloudProvider allows injecting a cloud provider.
+// WithCloudProvider allows injecting a cloud provider, conflicts with WithCloudProviderBuilder.
 func (b *AutoscalerBuilder) WithCloudProvider(cloudProvider cloudprovider.CloudProvider) *AutoscalerBuilder {
 	b.cloudProvider = cloudProvider
+	return b
+}
+
+// WithCloudProviderBuilder allows injecting a cloud provider builder, conflicts with WithCloudProvider.
+func (b *AutoscalerBuilder) WithCloudProviderBuilder(cloudProviderBuilder CloudProviderBuilder) *AutoscalerBuilder {
+	b.cloudProviderBuilder = cloudProviderBuilder
 	return b
 }
 
@@ -150,8 +159,11 @@ func (b *AutoscalerBuilder) Build(ctx context.Context) (core.Autoscaler, *loop.L
 	if b.informerFactory == nil {
 		return nil, nil, fmt.Errorf("informerFactory is missing: ensure WithInformerFactory() is called")
 	}
-	if b.cloudProvider == nil {
-		return nil, nil, fmt.Errorf("cloudProvider is missing: ensure WithCloudProvider() is called")
+	if b.cloudProvider == nil && b.cloudProviderBuilder == nil {
+		return nil, nil, fmt.Errorf("cloudProvider is missing: ensure WithCloudProvider() or WithCloudProviderBuilder() is called")
+	}
+	if b.cloudProvider != nil && b.cloudProviderBuilder != nil {
+		return nil, nil, fmt.Errorf("conflicting options: WithCloudProvider() and WithCloudProviderBuilder() cannot be configured together")
 	}
 
 	fwHandle, err := framework.NewHandle(ctx, b.informerFactory, autoscalingOptions.SchedulerConfig, autoscalingOptions.DynamicResourceAllocationEnabled, autoscalingOptions.CSINodeAwareSchedulingEnabled)
@@ -305,6 +317,11 @@ func (b *AutoscalerBuilder) Build(ctx context.Context) (core.Autoscaler, *loop.L
 	// Set cloud provider option if injected.
 	if b.cloudProvider != nil {
 		opts.CloudProvider = b.cloudProvider
+	} else {
+		opts.CloudProvider, err = b.cloudProviderBuilder(&opts)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to build cloud provider: %w", err)
+		}
 	}
 
 	// Create autoscaler.
