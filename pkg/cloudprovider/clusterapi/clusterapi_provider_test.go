@@ -32,10 +32,7 @@ func TestProviderConstructorProperties(t *testing.T) {
 	controller := NewTestMachineController(t)
 	defer controller.Stop()
 
-	provider := newProvider(cloudprovider.ClusterAPIProviderName, &resourceLimits, controller.machineController)
-	if actual := provider.Name(); actual != cloudprovider.ClusterAPIProviderName {
-		t.Errorf("expected %q, got %q", cloudprovider.ClusterAPIProviderName, actual)
-	}
+	provider := newProvider(&resourceLimits, controller.machineController)
 
 	rl, err := provider.GetResourceLimiter()
 	if err != nil {
@@ -121,10 +118,7 @@ func BenchmarkNodeGroups(b *testing.B) {
 		b.Fatalf("unexpected error: %v", err)
 	}
 
-	provider := newProvider(cloudprovider.ClusterAPIProviderName, &resourceLimits, controller.machineController)
-	if actual := provider.Name(); actual != cloudprovider.ClusterAPIProviderName {
-		b.Errorf("expected %q, got %q", cloudprovider.ClusterAPIProviderName, actual)
-	}
+	provider := newProvider(&resourceLimits, controller.machineController)
 
 	b.ResetTimer()
 	b.Run("NodeGroups", func(b *testing.B) {

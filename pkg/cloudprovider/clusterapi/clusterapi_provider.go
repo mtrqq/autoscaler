@@ -42,18 +42,19 @@ import (
 const (
 	// GPULabel is the label added to nodes with GPU resource.
 	GPULabel = "cluster-api/accelerator"
+	// ProviderName is the provider name of clusterapi
+	ProviderName = "clusterapi"
 )
 
 var _ cloudprovider.CloudProvider = (*provider)(nil)
 
 type provider struct {
 	controller      *machineController
-	providerName    string
 	resourceLimiter *cloudprovider.ResourceLimiter
 }
 
 func (p *provider) Name() string {
-	return p.providerName
+	return ProviderName
 }
 
 func (p *provider) GetResourceLimiter() (*cloudprovider.ResourceLimiter, error) {
@@ -142,12 +143,10 @@ func (p *provider) GetNodeGpuConfig(node *corev1.Node) *cloudprovider.GpuConfig 
 }
 
 func newProvider(
-	name string,
 	rl *cloudprovider.ResourceLimiter,
 	controller *machineController,
 ) cloudprovider.CloudProvider {
 	return &provider{
-		providerName:    name,
 		resourceLimiter: rl,
 		controller:      controller,
 	}
@@ -220,5 +219,5 @@ func BuildClusterAPI(opts *coreoptions.AutoscalerOptions, do cloudprovider.NodeG
 		klog.Fatal(err)
 	}
 
-	return newProvider(cloudprovider.ClusterAPIProviderName, rl, controller)
+	return newProvider(rl, controller)
 }
